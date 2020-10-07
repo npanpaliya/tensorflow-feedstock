@@ -1,0 +1,150 @@
+From 2b7c2d770c078d08db731eab13132a1d2a7f60c8 Mon Sep 17 00:00:00 2001
+From: Nishidha Panpaliya <npanpa23@in.ibm.com>
+Date: Wed, 7 Oct 2020 19:18:45 +0000
+Subject: [PATCH] Allow NVCC and NVMM to be from different directories
+
+---
+ third_party/gpus/cuda_configure.bzl            | 13 +++++++++----
+ third_party/gpus/find_cuda_config.py           | 21 +++++++++++++--------
+ third_party/gpus/find_cuda_config.py.gz.base64 |  2 +-
+ 3 files changed, 23 insertions(+), 13 deletions(-)
+
+diff --git a/third_party/gpus/cuda_configure.bzl b/third_party/gpus/cuda_configure.bzl
+index 3dddc24..3393054 100644
+--- a/third_party/gpus/cuda_configure.bzl
++++ b/third_party/gpus/cuda_configure.bzl
+@@ -390,6 +390,7 @@ def _cuda_include_path(repository_ctx, cuda_config):
+     extra_cuda_path = _get_cuda_extra_target_path(repository_ctx, cuda_config)
+     if extra_cuda_path != "":
+         inc_entries.append(extra_cuda_path)
++    print("CUDA Include DIRs: ", inc_entries)
+     return inc_entries
+ 
+ def enable_cuda(repository_ctx):
+@@ -548,13 +549,15 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
+         Map of library names to structs of filename and path.
+       """
+     cpu_value = cuda_config.cpu_value
+-    stub_dir = "" if is_windows(repository_ctx) else "/stubs"
+-
++    #stub_dir = "" if is_windows(repository_ctx) else "/stubs"
++    print("CudaRT LIB dir: ", cuda_config.config["cuda_library_dir"])
++    print("Cuda static LIB dir: ", cuda_config.config["cuda_static_library_dir"])
++    print("Cuda stub dir: " , cuda_config.config["cuda_stub_library_dir"])
+     check_cuda_libs_params = {
+         "cuda": _check_cuda_lib_params(
+             "cuda",
+             cpu_value,
+-            cuda_config.config["cuda_library_dir"] + stub_dir,
++            cuda_config.config["cuda_stub_library_dir"],
+             version = None,
+             static = False,
+         ),
+@@ -568,7 +571,7 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
+         "cudart_static": _check_cuda_lib_params(
+             "cudart_static",
+             cpu_value,
+-            cuda_config.config["cuda_library_dir"],
++            cuda_config.config["cuda_static_library_dir"],
+             cuda_config.cuda_version,
+             static = True,
+         ),
+@@ -687,6 +690,7 @@ def _get_cuda_config(repository_ctx, find_cuda_config_script):
+     cpu_value = get_cpu_value(repository_ctx)
+     toolkit_path = config["cuda_toolkit_path"]
+ 
++    print("Toolkit path for NVVM: ", toolkit_path)
+     is_windows = cpu_value == "Windows"
+     cuda_version = config["cuda_version"].split(".")
+     cuda_major = cuda_version[0]
+@@ -1255,6 +1259,7 @@ def _create_local_cuda_repository(repository_ctx):
+ 
+         file_ext = ".exe" if is_windows(repository_ctx) else ""
+         nvcc_path = "%s/nvcc%s" % (cuda_config.config["cuda_binary_dir"], file_ext)
++        print("NVCC path: ", nvcc_path)
+         cuda_defines["%{compiler_deps}"] = ":crosstool_wrapper_driver_is_not_gcc"
+         cuda_defines["%{win_compiler_deps}"] = ":windows_msvc_wrapper_files"
+ 
+diff --git a/third_party/gpus/find_cuda_config.py b/third_party/gpus/find_cuda_config.py
+index f4b1acc..595b27d 100644
+--- a/third_party/gpus/find_cuda_config.py
++++ b/third_party/gpus/find_cuda_config.py
+@@ -188,6 +188,7 @@ def _library_paths():
+       "lib/*-linux-gnu",
+       "lib/x64",
+       "extras/CUPTI/*",
++      "lib/stubs",
+   ]
+ 
+ 
+@@ -206,7 +207,7 @@ def _find_file(base_paths, relative_paths, filepattern):
+   raise _not_found_error(base_paths, relative_paths, filepattern)
+ 
+ 
+-def _find_library(base_paths, library_name, required_version):
++def _find_library(base_paths, library_name, required_version, static = False):
+   """Returns first valid path to the requested library."""
+   if _is_windows():
+     filepattern = library_name + ".lib"
+@@ -214,11 +215,13 @@ def _find_library(base_paths, library_name, required_version):
+     filepattern = "%s*.dylib" % (".".join(["lib" + library_name] +
+                                           required_version.split(".")[:1]))
+   else:
+-    filepattern = ".".join(["lib" + library_name, "so"] +
++    if static:
++      filepattern = ".".join(["lib" + library_name, "a"])
++    else:
++      filepattern = ".".join(["lib" + library_name, "so"] +
+                            required_version.split(".")[:1]) + "*"
+   return _find_file(base_paths, _library_paths(), filepattern)
+ 
+-
+ def _find_versioned_file(base_paths, relative_paths, filepatterns,
+                          required_version, get_version):
+   """Returns first valid path to a file that matches the requested version."""
+@@ -256,6 +259,10 @@ def _find_cuda_config(base_paths, required_version):
+ 
+   cuda_library_path = _find_library(base_paths, "cudart", cuda_version)
+ 
++  cuda_stub_library_path = _find_library(base_paths, "cuda", "1")
++
++  cuda_static_library_path = _find_library(base_paths, "cudart_static", cuda_version, True)
++
+   def get_nvcc_version(path):
+     pattern = "Cuda compilation tools, release \d+\.\d+, V(\d+\.\d+\.\d+)"
+     for line in subprocess.check_output([path, "--version"]).splitlines():
+@@ -288,19 +295,17 @@ def _find_cuda_config(base_paths, required_version):
+       os.path.normpath(os.path.join(cuda_binary_dir, "..")),
+       os.path.normpath(os.path.join(nvvm_library_dir, "../..")),
+   )
+-  if cuda_toolkit_paths[0] != cuda_toolkit_paths[1]:
+-    raise ConfigError("Inconsistent CUDA toolkit path: %s vs %s" %
+-                      cuda_toolkit_paths)
+-
+   return {
+       "cuda_version": cuda_version,
+       "cuda_include_dir": os.path.dirname(cuda_header_path),
+       "cuda_library_dir": os.path.dirname(cuda_library_path),
++      "cuda_static_library_dir": os.path.dirname(cuda_static_library_path),
++      "cuda_stub_library_dir" : os.path.dirname(cuda_stub_library_path),
+       "cuda_binary_dir": cuda_binary_dir,
+       "nvvm_library_dir": nvvm_library_dir,
+       "cupti_include_dir": os.path.dirname(cupti_header_path),
+       "cupti_library_dir": os.path.dirname(cupti_library_path),
+-      "cuda_toolkit_path": cuda_toolkit_paths[0],
++      "cuda_toolkit_path": cuda_toolkit_paths[1],
+   }
+ 
+ 
+diff --git a/third_party/gpus/find_cuda_config.py.gz.base64 b/third_party/gpus/find_cuda_config.py.gz.base64
+index 981219b..efb6070 100644
+--- a/third_party/gpus/find_cuda_config.py.gz.base64
++++ b/third_party/gpus/find_cuda_config.py.gz.base64
+@@ -1 +1 @@
+-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
+\ No newline at end of file
++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
+\ No newline at end of file
+-- 
+1.8.3.1
+

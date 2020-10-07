@@ -29,7 +29,8 @@ source:
     - 0202-Remove-extra-null-terminators.patch
     - 0203-Find-cublas-in-conda-environment.patch
     - 0204-Replace-var-lock-with-tmp-lock.patch
-    - 0205-Fix-the-build-on-x86-opence-container.patch 
+    - 0205-Fix-the-build-on-x86-opence-container.patch
+    - 0206-Allow-NVCC-and-NVMM-to-be-from-different-directories.patch 
 {% endif %}
 
     # 03xx - patch temporary to fix a problem that when fixed upstream can be removed
@@ -61,6 +62,7 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - {{ compiler('cuda') }}                   #[build_type == 'cuda']
 
   host:
     # conda build requirements
@@ -71,8 +73,8 @@ requirements:
     - python {{ python }}
     - swig
 {% if build_type == 'cuda' %}
-    - {{ compiler('cuda') }} 
     - cudnn {{ cudnn }}
+    #- {{ compiler('cuda') }}
     - nccl {{ nccl }}
     - tensorrt {{ tensorrt }}
 {% endif %}
