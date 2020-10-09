@@ -42,6 +42,13 @@ cat > $BAZEL_RC_DIR/nvidia_components_configure.bazelrc << EOF
 build --config=cuda
 build --config=tensorrt
 build --action_env TF_CUDA_VERSION="${cudatoolkit%.*}"
+build --action_env OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+build:cuda --action_env OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+build:opt --action_env OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+build --define=OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+build:cuda --define=OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+build:opt --define=OPEN_CE_CUDA_HOME="$OPEN_CE_CUDA_HOME"
+
 build --action_env TF_CUDNN_VERSION="${cudnn:0:1}" #First digit only
 build --action_env TF_TENSORRT_VERSION="${tensorrt:0:1}"
 build --action_env TF_NCCL_VERSION="${nccl:0:1}"

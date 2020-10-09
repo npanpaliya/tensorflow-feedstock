@@ -1,27 +1,39 @@
-From 2b7c2d770c078d08db731eab13132a1d2a7f60c8 Mon Sep 17 00:00:00 2001
+From 96f0bc11b3fe63bc4583d0abea3f471468a92656 Mon Sep 17 00:00:00 2001
 From: Nishidha Panpaliya <npanpa23@in.ibm.com>
-Date: Wed, 7 Oct 2020 19:18:45 +0000
+Date: Thu, 8 Oct 2020 14:02:04 +0000
 Subject: [PATCH] Allow NVCC and NVMM to be from different directories
 
 ---
- third_party/gpus/cuda_configure.bzl            | 13 +++++++++----
+ third_party/gpus/cuda_configure.bzl            | 18 ++++++++++++------
  third_party/gpus/find_cuda_config.py           | 21 +++++++++++++--------
  third_party/gpus/find_cuda_config.py.gz.base64 |  2 +-
- 3 files changed, 23 insertions(+), 13 deletions(-)
+ 3 files changed, 26 insertions(+), 15 deletions(-)
 
 diff --git a/third_party/gpus/cuda_configure.bzl b/third_party/gpus/cuda_configure.bzl
-index 3dddc24..3393054 100644
+index a192c02..b60ac76 100644
 --- a/third_party/gpus/cuda_configure.bzl
 +++ b/third_party/gpus/cuda_configure.bzl
-@@ -390,6 +390,7 @@ def _cuda_include_path(repository_ctx, cuda_config):
-     extra_cuda_path = _get_cuda_extra_target_path(repository_ctx, cuda_config)
-     if extra_cuda_path != "":
-         inc_entries.append(extra_cuda_path)
+@@ -339,8 +339,8 @@ def _cuda_include_path(repository_ctx, cuda_config):
+       Returns:
+         A list of the gcc host compiler include directories.
+       """
+-    nvcc_path = repository_ctx.path("%s/bin/nvcc%s" % (
+-        cuda_config.cuda_toolkit_path,
++    nvcc_path = repository_ctx.path("%s%s" % (
++        cuda_config.config["cuda_binary_dir"],
+         ".exe" if cuda_config.cpu_value == "Windows" else "",
+     ))
+ 
+@@ -361,6 +361,8 @@ def _cuda_include_path(repository_ctx, cuda_config):
+     if target_dir != "":
+         inc_entries.append(realpath(repository_ctx, target_dir))
+     inc_entries.append(realpath(repository_ctx, cuda_config.cuda_toolkit_path + "/include"))
++
 +    print("CUDA Include DIRs: ", inc_entries)
      return inc_entries
  
  def enable_cuda(repository_ctx):
-@@ -548,13 +549,15 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
+@@ -519,13 +521,15 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
          Map of library names to structs of filename and path.
        """
      cpu_value = cuda_config.cpu_value
@@ -40,7 +52,7 @@ index 3dddc24..3393054 100644
              version = None,
              static = False,
          ),
-@@ -568,7 +571,7 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
+@@ -539,7 +543,7 @@ def _find_libs(repository_ctx, check_cuda_libs_script, cuda_config):
          "cudart_static": _check_cuda_lib_params(
              "cudart_static",
              cpu_value,
@@ -49,7 +61,7 @@ index 3dddc24..3393054 100644
              cuda_config.cuda_version,
              static = True,
          ),
-@@ -687,6 +690,7 @@ def _get_cuda_config(repository_ctx, find_cuda_config_script):
+@@ -658,6 +662,7 @@ def _get_cuda_config(repository_ctx, find_cuda_config_script):
      cpu_value = get_cpu_value(repository_ctx)
      toolkit_path = config["cuda_toolkit_path"]
  
@@ -57,7 +69,7 @@ index 3dddc24..3393054 100644
      is_windows = cpu_value == "Windows"
      cuda_version = config["cuda_version"].split(".")
      cuda_major = cuda_version[0]
-@@ -1255,6 +1259,7 @@ def _create_local_cuda_repository(repository_ctx):
+@@ -1226,6 +1231,7 @@ def _create_local_cuda_repository(repository_ctx):
  
          file_ext = ".exe" if is_windows(repository_ctx) else ""
          nvcc_path = "%s/nvcc%s" % (cuda_config.config["cuda_binary_dir"], file_ext)

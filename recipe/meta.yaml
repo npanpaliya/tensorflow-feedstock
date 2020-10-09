@@ -29,8 +29,9 @@ source:
     - 0202-Remove-extra-null-terminators.patch
     - 0203-Find-cublas-in-conda-environment.patch
     - 0204-Replace-var-lock-with-tmp-lock.patch
-    - 0205-Fix-the-build-on-x86-opence-container.patch
+    - 0205-Fix-the-build-on-x86-opence-container.patch   #[x86_64]
     - 0206-Allow-NVCC-and-NVMM-to-be-from-different-directories.patch 
+    - 0001-Add-environ-var.patch
 {% endif %}
 
     # 03xx - patch temporary to fix a problem that when fixed upstream can be removed
