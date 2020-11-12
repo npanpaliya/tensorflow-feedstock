@@ -18,6 +18,9 @@ SCRIPT_DIR=$RECIPE_DIR/../buildscripts
 # expand PREFIX in BUILD file - PREFIX is from conda build environment
 sed -i -e "s:\${PREFIX}:${PREFIX}:" tensorflow/core/platform/default/build_config/BUILD
 
+echo "CUDA_HOME: $CUDA_HOME"
+exit 1
+
 # Pick up additional variables defined from the conda build environment
 $SCRIPT_DIR/set_python_path_for_bazelrc.sh $SRC_DIR/tensorflow
 if [[ $build_type == "cuda" ]]
@@ -36,17 +39,13 @@ bazel --bazelrc=$SRC_DIR/tensorflow/tensorflow.bazelrc build \
     --config=opt \
     --config=numa \
     --curses=no \
-    //tensorflow/tools/pip_package:build_pip_package
+    //tensorflow/tools/lib_package:libtensorflow \
+    //tensorflow:install_headers \
+
 
 # build a whl file
 mkdir -p $SRC_DIR/tensorflow_pkg
-bazel-bin/tensorflow/tools/pip_package/build_pip_package $SRC_DIR/tensorflow_pkg
-
-# install using pip from the whl file
-pip install --no-deps $SRC_DIR/tensorflow_pkg/*p${CONDA_PY}*.whl
-
-# The tensorboard package has the proper entrypoint
-rm -f ${PREFIX}/bin/tensorboard
+tar -C ${SP_DIR}/tensorflow -xzf bazel-bin/tensorflow/tools/lib_package/libtensorflow.tar.gz
 
 echo "PREFIX: $PREFIX"
 echo "RECIPE_DIR: $RECIPE_DIR"
