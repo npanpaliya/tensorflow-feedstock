@@ -1,32 +1,36 @@
-From 478c81dcab220701b48a1a7b9e11ff40ceec2db5 Mon Sep 17 00:00:00 2001
+From 2e8277f4293dd7f53423fbb29965d86b700c5e0b Mon Sep 17 00:00:00 2001
 From: Nishidha Panpaliya <npanpa23@in.ibm.com>
-Date: Tue, 2 Feb 2021 08:48:14 +0000
-Subject: [PATCH] Eigen customized for ppc
+Date: Mon, 10 May 2021 18:40:50 +0000
+Subject: [PATCH] Eigen customized
 
 ---
- tensorflow/workspace.bzl | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ tensorflow/workspace.bzl | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/tensorflow/workspace.bzl b/tensorflow/workspace.bzl
-index 89062b1..386d94c 100755
+index 3ec2aa6b124..ef4cc56d4f2 100755
 --- a/tensorflow/workspace.bzl
 +++ b/tensorflow/workspace.bzl
-@@ -198,11 +198,11 @@ def tf_repositories(path_prefix = "", tf_repo_name = ""):
+@@ -202,12 +202,13 @@ def tf_repositories(path_prefix = "", tf_repo_name = ""):
          name = "eigen_archive",
          build_file = clean_dep("//third_party:eigen.BUILD"),
          patch_file = clean_dep("//third_party/eigen3:gpu_packet_math.patch"),
--        sha256 = "e807a6a6f3a0e8ab10adeb59bb5a9bbb113e8e1684f9b4b32f73f58fd758b4cf",  # SHARED_EIGEN_SHA
--        strip_prefix = "eigen-011e0db31d1bed8b7f73662be6d57d9f30fa457a",
+-        sha256 = "df23a89e4cdfa7de2d81ee28190bd194413e47ff177c94076f845b32d7280344",  # SHARED_EIGEN_SHA
+-        strip_prefix = "eigen-5dc2fbabeee17fe023c38756ebde0c1d56472913",
+-        urls = [
+-            "https://storage.googleapis.com/mirror.tensorflow.org/gitlab.com/libeigen/eigen/-/archive/5dc2fbabeee17fe023c38756ebde0c1d56472913/eigen-5dc2fbabeee17fe023c38756ebde0c1d56472913.tar.gz",
+-            "https://gitlab.com/libeigen/eigen/-/archive/5dc2fbabeee17fe023c38756ebde0c1d56472913/eigen-5dc2fbabeee17fe023c38756ebde0c1d56472913.tar.gz",
+-        ],
 +        sha256 = "5b6c58d367794c76b5ad54effc60d295450958f98b7506966a29d0e45d7b066d",  # SHARED_EIGEN_SHA
 +        strip_prefix = "libeigen-eigen-revert-matrix-enhance",
-         urls = [
--            "https://storage.googleapis.com/mirror.tensorflow.org/gitlab.com/libeigen/eigen/-/archive/011e0db31d1bed8b7f73662be6d57d9f30fa457a/eigen-011e0db31d1bed8b7f73662be6d57d9f30fa457a.tar.gz",
--            "https://gitlab.com/libeigen/eigen/-/archive/011e0db31d1bed8b7f73662be6d57d9f30fa457a/eigen-011e0db31d1bed8b7f73662be6d57d9f30fa457a.tar.gz",
++         urls = [
 +            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/open-ce/libeigen-eigen/archive/revert-matrix-enhance.zip",
 +            "https://github.com/open-ce/libeigen-eigen/archive/revert-matrix-enhance.zip",
-         ],
++         ],
++
      )
  
+     tf_http_archive(
 -- 
-1.8.3.1
+2.27.0
 
